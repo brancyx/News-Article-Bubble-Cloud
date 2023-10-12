@@ -458,8 +458,8 @@
       fetch(`/api/get_keywords_by_date?date=${formattedDate}`)
         .then(response => response.json())
         .then(keywordData => {
-          allKeywordData = keywordData;
           console.log(keywordData)
+          allKeywordData = keywordData;
           document.getElementById('query-date').textContent = queryDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
           // Use the keywordData to create the bubble chart (similar to the previous code)
           // Set up the dimensions of the bubble cloud visualization
