@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>News Article Keywords Bubble Cloud</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src='https://d3js.org/d3.v7.min.js'></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-cloud/1.2.7/d3.layout.cloud.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="../static/style.css">
+</head>
+
+<body>
+  <div class="row align-items-center custom-row">
+    <div class="col">
+      <h1>News Article Keywords Bubble Cloud</h1>
+    </div>
+    <div class="col-auto">
+      <button type="button" id="update-button" class="btn btn-primary">Toggle Visualisation</button>
+    </div>
+  </div>
+
+  
+  
+  <div id="bubble-chart-container">
+    <div class="row align-items-center date-container">
+      <div class="col-auto">
+        <button id="prev-date-button" class="btn btn-secondary">&#9664;</button>
+      </div>
+      <div class="col">
+        <h2 id="query-date">Today's Date</h2>
+      </div>
+      <div class="col-auto">
+        <button id="next-date-button" class="btn btn-secondary">&#9654;</button>
+      </div>
+    </div>
+    <div class="btn-group" role="group" aria-label="Category buttons">
+      <button type="button" class="btn btn-secondary" id="allBtn" onclick="selectCategory('All')">All Categories</button>
+      <button type="button" class="btn btn-secondary" id="businessBtn" onclick="selectCategory('Business')">Business</button>
+      <button type="button" class="btn btn-secondary" id="sustainabilityBtn" onclick="selectCategory('Sustainability')">Sustainability</button>
+      <button type="button" class="btn btn-secondary" id="sportsBtn" onclick="selectCategory('Sports')">Sports</button>
+    </div>
+
+    <!-- <div id="num-config">
+      <label for="num-bubbles">Number of Bubbles:</label>
+      <button id="increase-button">+</button>
+      <button id="decrease-button">-</button>
+    </div> -->
+    <div id="bubble-chart" style="display: block"></div>
+    <div id="word-cloud-container" class="custom-word-cloud" style="display: none">
+      <!-- Add content for the word cloud here, if needed -->
+    </div>
+  </div>
+  
+
+  <div id="article-chart-container">
+    <h2 id="keyword-clicked"></h2>
+    <!-- Line Chart Canvas -->
+    <canvas id="article-chart" height="200"></canvas>
+  
+    <!-- Articles Header Div -->
+    <div id="article-headers" class="tile-list"></div>
+  </div>
+
+
+  <script>
+    let allKeywordData = [
+      { category: 'Sustainability' },
+      { category: 'Business' },
+      {category: 'Sports'}
+    ];
+    let lastClickedButton = document.getElementById("businessBtn");;
+    let selectedCategory = 'All';
+    let numBubbles = 45;
+    // Get the current date as a formatted string
+    const currentDate = new Date(2023, 9, 2)
+    // let queryDate = new Date(currentDate)
+    let queryDate = new Date(2023, 9, 2);
+
+    // Function to fetch chart data from the backend
+    function fetchChartData(keyword) {
+      return fetch(`/api/entry_counts_by_month?keyword=${encodeURIComponent(keyword)}`)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => data)
+        .catch((error) => {
+          console.error('Error fetching chart data:', error);
+          return [];
+        });
+    }
+
+    // Function to update the chart with the fetched data
+    async function updateChart(keyword, chartContainer) {
+      try {
+        const chartData = await fetchChartData(keyword);
+
+        // Rest of your chart update code 
+        // Set the canvas dimensions based on the container's dimensions
+        const canvas = document.getElementById("article-chart");
+        canvas.width = chartContainer.offsetWidth;
+        canvas.height = 200; // You can adjust the height as needed
+
+        // Check if a chart instance already exists on the canvas
+        if (window.myArticleChart) {
+          // If a chart instance exists, destroy it
+          window.myArticleChart.destroy();
+        }
+
+        // Extract labels, article counts, and sentiment scores from the data
+        const labels = chartData.map(item => item.month);
+        const articleCounts = chartData.map(item => item.count);
+        const sentimentScores = chartData.map(item => item.total_sentiment_score);
+
+        // Create the chart with the updated canvas dimensions
+        const ctx = canvas.getContext("2d");
+        window.myArticleChart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: labels, // Fill in your array of labels (e.g., months)
+            datasets: [
+              {
+                label: "Article Count",
+                data: articleCounts, // Fill in your array of data (e.g., article counts)
+                yAxisID: "primary",
+                backgroundColor: "rgba(75, 192, 192, 0.2)", // Set the background color
+                borderColor: "rgba(75, 192, 192, 1)", // Set the border color
+                borderWidth: 1, // Set the border width
+                pointRadius: 3, // Set the point radius
+                pointBackgroundColor: "rgba(75, 192, 192, 1)", // Set the point color
+              },
+              {
+                label: "Sentiment",
+                data: sentimentScores, // Fill in your array of data (e.g., article counts)
+                yAxisID: "secondary",
+                backgroundColor: "rgba(255, 99, 132, 1)", // Set the background color
+                borderColor: "rgba(255, 99, 132, 1)", // Set the border color
+                borderWidth: 1, // Set the border width
+                pointRadius: 3, // Set the point radius
+                pointBackgroundColor: "rgba(255, 99, 132, 1)", // Set the point color
+              },
+            ],
+          },
+          options: {
+            responsive: true, // Set to false if you don't want resizing behavior
+            maintainAspectRatio: true, // Set to false to allow custom width and height
+            scales: {
+              x: {
+                display: true,
+                title: {
+                  display: true,
+                  text: "Month", // Set your X-axis label
+                },
+              },
+              primary: {
+                position: "left", // Position the primary Y-axis on the left side
+                title: {
+                  display: true,
+                  text: "Article Count",
+                },
+              },
+              secondary: {
+                position: "right", // Position the secondary Y-axis on the right side
+                title: {
+                  display: true,
+                  text: "Sentiment",
+                },
+              },
+            },
+          },
+        });
+
+      } catch (error) {
+        console.error('Error updating chart:', error);
+      }
+    }
+
+    // Function to handle the click event on bubbles
+    function handleBubbleClick(event, d, svg) {
+      const clickedBubble = d3.select(event.currentTarget);
+
+      // Remove the "selected" class from all bubbles
+      svg.selectAll(".bubble").classed("selected", false);
+      svg.selectAll(".bubble").style("opacity", 0.5);
+
+      // Add the "selected" class to the clicked bubble
+      clickedBubble.classed("selected", true);
+      clickedBubble.style("opacity", 0.7);
+
+      const clickedBubbleText = d.data.keyword;
+      console.log("Clicked Bubble Text: ", clickedBubbleText);
+
+      // Fetch the article headers corresponding to the clicked bubble's text
+      fetch(`/get_article_headers_by_keyword?keyword=${encodeURIComponent(clickedBubbleText)}`)
+        .then((response) => response.json())
+        .then((articleHeaders) => {
+          // Generate HTML markup for the table headers
+          const tableHeaders = '<th>Sentence</th><th>Polarity</th><th>Objectivity</th>';
+          // Populate the 'article-headers' div with the article headers
+          const articleHeadersDiv = document.getElementById("article-headers");
+          articleHeadersDiv.innerHTML = '<h2>Articles:</h2><div class="tile-list">';
+          articleHeaders.forEach((past_article) => {
+            const sentimentData = JSON.parse(past_article.sentiment);
+            const tableRows = sentimentData.map((row) => {
+              const tableCells = row.map((item) => `<td>${item}</td>`).join('');
+              return `<tr>${tableCells}</tr>`;
+            }).join('');
+            articleHeadersDiv.innerHTML += `<div class="tile">
+              <a href="${past_article.link}" target="_blank" class="tile-header">${past_article.title}</a>
+              <p class="tile-text">${past_article.date_string}</p>
+              <div class="tile-content">
+                <!-- Hidden content goes here -->
+                <table class="table">
+                  <thead>
+                    <tr>${tableHeaders}</tr>
+                  </thead>
+                  <tbody>
+                    ${tableRows}
+                  </tbody>
+                </table>
+              </div>
+            </div>`;
+          });
+          articleHeadersDiv.innerHTML += "</div>";
+
+          // Add event listeners to toggle dropdown expansion
+          const tiles = articleHeadersDiv.querySelectorAll('.tile');
+          tiles.forEach((tile) => {
+            tile.addEventListener('click', () => {
+              const tileContent = tile.querySelector('.tile-content');
+              tileContent.style.display = tileContent.style.display === 'none' ? 'block' : 'none';
+            });
+          });
+
+
+          // Create a line chart to show article count over time
+          // Initialize the line chart
+          // Get the article-chart-container element
+          const chartContainer = document.getElementById("article-chart-container");
+          document.getElementById('keyword-clicked').textContent = `Keyword: "${clickedBubbleText}"`;
+          updateChart(clickedBubbleText, chartContainer)
+          
+        })
+        .catch((error) => console.error("Error fetching article headers:", error));
+      }
+
+    // Function to create the bubble chart
+    function createBubbleChart(keywordData, handleBubbleClick) {
+      // Clear existing bubble chart
+      d3.select("#bubble-chart").selectAll("svg").remove();
+
+      // Sort data by descending frequencies
+      keywordData.sort((a, b) => b.frequency - a.frequency);
+      let limitedData = [];
+
+      if (selectedCategory === 'All') {        
+        // Take the top 15 items from each category
+        const categories = [...new Set(keywordData.map(d => d.category))];
+        
+        categories.forEach(category => {
+          const categoryData = keywordData.filter(d => d.category === category).slice(0, 15);
+          limitedData.push(...categoryData);
+        });
+      } else {
+        limitedData = keywordData;
+      }
+      
+      limitedData.sort(() => Math.random() - 0.5)
+
+      // Rest of the code for creating the bubble chart (same as before)
+      const width = 800;
+      const height = 600;
+      const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+
+      // Append an SVG element to the "bubble-chart" div
+      const svg = d3.select("#bubble-chart")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+      // Create a pack layout to calculate bubble positions
+      const pack = d3.pack()
+        .size([width - margin.left - margin.right, height - margin.top - margin.bottom])
+        .padding(5);
+
+      // Convert frequency values to numerical values
+      limitedData.forEach(d => d.frequency = +d.frequency);
+
+      // Create a hierarchy from the keyword data for the pack layout
+      const root = d3.hierarchy({ children: limitedData })
+        .sum(d => d.frequency);
+
+      // Use the pack layout to calculate bubble positions
+      pack(root);
+
+      // Create bubble elements
+      const bubbles = svg.selectAll(".bubble")
+        .data(root.leaves())
+        .enter()
+        .append("g")
+        .attr("transform", d => `translate(${d.x + margin.left}, ${d.y + margin.top})`);
+
+      // Append circles for the bubbles
+      bubbles.append("circle")
+        .attr("class", "bubble")
+        .attr("r", d => d.r)
+        .style("fill", d => colorScale(d.data.category))
+        .style("opacity", 0.5)
+        .on("mouseover", handleMouseOver)
+        .on("mouseout", handleMouseOut)
+        .on("click", (event, d) => handleBubbleClick(event, d, svg));
+
+      // Append text labels for the keywords
+      bubbles.append("text")
+        .style("text-anchor", "middle")
+        .style("pointer-events", "none")
+        .style("font-size", d => `${Math.max(8, d.r / 3)}px`)
+        .text(d => d.data.keyword)
+        // .append("tspan")
+        // .attr("x", 0)
+        // .attr("dy", "1.2em") // Adjust this value to control the vertical position
+        // .text(d => `(${d.data.frequency})`);
+
+      // Define mouseover and mouseout event handlers
+      function handleMouseOver(d, i) {
+        // Show tooltip or perform other interactions on mouseover
+        d3.select(this)
+          .style("stroke", "black")
+          .style("stroke-width", 2);
+      }
+
+      function handleMouseOut(d, i) {
+        // Hide tooltip or reset interactions on mouseout
+        d3.select(this)
+          .style("stroke", "none");
+      }
+
+    }
+
+    function displayWordCloud() {
+      // Remove any existing word clouds
+      d3.select('#word-cloud-container').selectAll('svg').remove();
+      debugger;
+
+      // Set up the dimensions of the word cloud container
+      const width = 800;
+      const height = 400;
+
+      // Create a D3 layout for the word cloud using d3-cloud
+      const cloud = d3.layout.cloud()
+        .size([width, height])
+        .words(allKeywordData.map(d => ({ text: d.keyword, size: d.frequency * 10, category: d.category }))) // Adjust size based on frequency
+        .padding(5) // Adjust padding as needed
+        .rotate(() => ~~(Math.random() * 2) * 90) // Randomly rotate words at 0 or 90 degrees
+        .fontSize(d => d.size)
+        .on('end', draw); // Callback function to draw the word cloud
+
+      // Start the layout to generate the word cloud
+      cloud.start();
+
+      // Callback function to draw the word cloud
+      function draw(words) {
+        const svg = d3.select('#word-cloud-container')
+          .append('svg')
+          .attr('width', width)
+          .attr('height', height)
+          .append('g')
+          .attr('transform', `translate(${width / 2},${height / 2})`);
+
+        svg.selectAll('text')
+          .data(words)
+          .enter()
+          .append('text')
+          .style('font-size', d => `${d.size}px`)
+          .style('fill', (d) => getColorByCategory(d.category))
+          .attr('text-anchor', 'middle')
+          .attr('transform', d => `translate(${d.x},${d.y}) rotate(${d.rotate})`)
+          .text(d => d.text);
+      }
+    }
+
+    const seeWordCloudButton = document.getElementById('update-button');
+    seeWordCloudButton.addEventListener('click', function () {
+      const bubbleChartContainer = document.getElementById('bubble-chart');
+      const wordCloudContainer = document.getElementById('word-cloud-container');
+
+      // Toggle the visibility of the bubble chart and word cloud containers
+      if (bubbleChartContainer.style.display === 'block') {
+        bubbleChartContainer.style.display = 'none';
+        wordCloudContainer.style.display = 'block';
+
+        // Call a function to display the word cloud here, if needed
+        // e.g., displayWordCloud();
+        displayWordCloud()
+      } else {
+        bubbleChartContainer.style.display = 'block';
+        wordCloudContainer.style.display = 'none';
+      }
+    });
+
+    // Inside your date navigation event listeners
+    document.getElementById('prev-date-button').addEventListener('click', function () {
+      console.log(queryDate)
+      queryDate.setDate(queryDate.getDate() - 1)
+      fetchKeywordsData()
+    });
+
+    document.getElementById('next-date-button').addEventListener('click', function () {
+      // TODO: Update currentDate here to latest current date
+      if (queryDate < currentDate) {
+        queryDate.setDate(queryDate.getDate() + 1)
+        fetchKeywordsData()
+      }
+    });
+
+    function selectCategory(category) {
+      if (lastClickedButton) {
+        lastClickedButton.classList.remove('active-button');
+      }
+      // Add the active class to the clicked button
+      const buttonId = category.toLowerCase() + 'Btn';
+      const clickedButton = document.getElementById(buttonId);
+      clickedButton.classList.add('active-button');
+
+      // Store the reference to the last clicked button
+      lastClickedButton = clickedButton;
+
+      selectedCategory = category;
+
+      // Update the button styles to indicate the selected category
+      const categoryButtons = document.querySelectorAll('.category-button');
+      categoryButtons.forEach(button => {
+        if (button.textContent === category) {
+          button.classList.add('active');
+        } else {
+          button.classList.remove('active');
+        }
+      });
+
+      if (category === 'All') {
+        createBubbleChart(allKeywordData, handleBubbleClick); // Pass allKeywordData to show all categories
+      } else {
+        createBubbleChart(allKeywordData.filter(d => d.category === category), handleBubbleClick);
+      }
+    }
+
+    function fetchKeywordsData() {
+      const formattedDate = queryDate.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit'
+      });
+      fetch(`/api/get_keywords_by_date?date=${formattedDate}`)
+        .then(response => response.json())
+        .then(keywordData => {
+          allKeywordData = keywordData;
+          console.log(keywordData)
+          document.getElementById('query-date').textContent = queryDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+          // Use the keywordData to create the bubble chart (similar to the previous code)
+          // Set up the dimensions of the bubble cloud visualization
+          createBubbleChart(keywordData, handleBubbleClick)
+        })
+        .catch(error => console.error('Error fetching keywordData:', error));
+    }
+
+    // Define a function to get the color based on the category
+    function getColorByCategory(category) {
+      // Use the color mapping for the given category, default to a fallback color
+      return colorMap[category] || 'black'; // Fallback to black if category is not found
+    }
+
+    const colorMap = {
+        'Business': 'lightblue',
+        'Sustainability': 'lightgreen', // Assign 'green' to the 'sustainability' category
+        'Sports': 'orange'
+      };
+
+    // Set up the color scale
+    const colorScale = d3.scaleOrdinal()
+      .domain(allKeywordData.map(d => d.category))
+      .range(allKeywordData.map(d => colorMap[d.category] || 'gray'));
+
+    window.addEventListener('load', fetchKeywordsData);
+
+     // Event listener for the "Increase" button
+    // document.getElementById('increase-button').addEventListener('click', function () {
+    //   numBubbles += 1;
+    //   updateBubbleChart();
+    // });
+
+    // // Event listener for the "Decrease" button
+    // document.getElementById('decrease-button').addEventListener('click', function () {
+    //   if (numBubbles > 1) {
+    //     numBubbles -= 1;
+    //     updateBubbleChart();
+    //   }
+    // });
+
+    // // Function to update the bubble chart with the current numBubbles value
+    //   function updateBubbleChart(numBubbles) {
+    //     // Update your bubble chart with the new number of bubbles (numBubbles)
+    //     // You might need to re-fetch data or modify the existing data accordingly
+    //     // Then, call the createBubbleChart function with the updated data and numBubbles
+    //     const updatedKeywordData = allKeywordData.slice(0, numBubbles);
+    //     createBubbleChart(updatedKeywordData);
+    //   }
+</script>
+
+</body>
+
+</html>
+

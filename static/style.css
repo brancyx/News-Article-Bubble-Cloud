@@ -1,0 +1,152 @@
+.bubble {
+  fill: steelblue;
+  opacity: 0.7;
+}
+
+#bubble-chart {
+  display: flex;
+  justify-content: center;
+}
+
+#bubble-chart-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  /* Center text inside the container */
+}
+
+.selected {
+  fill: red;
+  /* Set the desired fill color for the selected bubble */
+}
+
+.category-button.btn-secondary {
+  background-color: #f8f9fa !important;
+  color: #333 !important;
+  border-color: #ccc !important;
+}
+
+.category-button.active {
+  background-color: #007bff !important;
+  color: white !important;
+}
+
+/* Style for the article-chart-container div */
+#article-chart-container {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #f7f7f7;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+/* Style for the article-headers div */
+#article-headers {
+  margin-top: 50px;
+}
+
+/* Style for the article header list */
+#article-headers ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+/* Style for the article header list items */
+#article-headers li {
+  font-size: 18px;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+#article-chart-container {
+  width: 100%;
+  max-width: 800px;
+  /* Set a maximum width if desired */
+  margin: 0 auto;
+  /* Center the container horizontally */
+}
+
+/* Style for the article header tiles */
+.tile-list {
+  list-style: none;
+  padding: 0;
+}
+
+.tile {
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+}
+
+.tile a {
+  text-decoration: none;
+  font-size: 28px;
+  color: #333;
+}
+
+.tile-text {
+  margin-top: 5px;
+  font-size: 14px;
+  color: #666;
+}
+
+.tile-content {
+  display: none;
+  padding: 10px;
+}
+
+.red {
+  background-color: red;
+}
+
+.blue {
+  background-color: blue;
+}
+
+.green {
+  background-color: green;
+}
+
+.custom-row {
+  background-color: #007bff;
+  /* Set a background color for the row */
+  color: #fff;
+  /* Set text color for the row */
+  padding: 10px;
+  /* Add padding to the row */
+}
+
+.date-container {
+  padding: 10px;
+  margin: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-secondary {
+  color: #fff;
+  margin: 5px;
+  font-size: 18px;
+  /* Increase the font size for arrows */
+  padding: 10px 15px;
+  /* Add padding to buttons */
+  cursor: pointer;
+  /* Change cursor on hover */
+}
+
+.active-button {
+  background-color: #454545; 
+  /* Change this to your desired color */
+  color: #fff;
+  /* Text color for the active button */
+}
+
+.custom-word-cloud {
+  padding: 10px;
+  margin: 20px;
+  background-color: black;
+  /* Add any other CSS styles you want to apply */
+}
