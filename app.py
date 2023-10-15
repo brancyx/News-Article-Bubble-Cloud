@@ -1,3 +1,4 @@
+import json
 from sqlalchemy import func, cast
 from collections import defaultdict
 from datetime import datetime
@@ -114,7 +115,7 @@ def get_entry_counts_and_sentiment_sum_by_month(keyword):
             pass
 
     # Convert aggregated data to the desired format
-    result_data = [{'month': key, 'count': counts[key], 'total_sentiment_score': sentiment_sums[key]}
+    result_data = [{'month': key, 'count': counts[key], 'total_sentiment_score': sentiment_sums[key]/counts[key]}
                    for key in set(counts.keys()) | set(sentiment_sums.keys())]
     sorted_data = sorted(result_data, key=lambda x: x['month'])
     return sorted_data
@@ -363,6 +364,14 @@ def get_data_by_date():
         return jsonify({'error': 'Invalid date format'}), 400
 
 
+def get_agg_polarity(sentiment_list):
+    sentiment_list = json.loads(sentiment_list)
+    agg_polarity = 0
+    for s, p, o in sentiment_list:
+        agg_polarity += p
+    return round(agg_polarity / len(sentiment_list), 2)
+
+
 @app.route('/get_article_headers_by_keyword')
 def get_article_headers():
     clicked_keyword = request.args.get('keyword')
@@ -379,7 +388,8 @@ def get_article_headers():
         # Process the retrieved data as needed
         data = [{'keyword': entry.keyword, 'title': entry.title,
                  'link': entry.link, 'date_string': entry.date_string,
-                 'sentiment': entry.sentiment, 'date_time': datetime.datetime.strptime(entry.date_string, '%d/%m/%y')} for entry in entries_for_keyword]
+                 'sentiment': entry.sentiment, 'agg_polarity': get_agg_polarity(entry.sentiment),
+                 'date_time': datetime.datetime.strptime(entry.date_string, '%d/%m/%y')} for entry in entries_for_keyword]
 
         sorted_data = sorted(data, key=lambda x: x['date_time'], reverse=True)
 
