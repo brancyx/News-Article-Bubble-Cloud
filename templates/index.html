@@ -207,7 +207,7 @@
           articleHeaders.forEach((past_article) => {
             const sentimentData = JSON.parse(past_article.sentiment);
             const tableRows = sentimentData.map((row) => {
-              const tableCells = row.map((item) => `<td>${item}</td>`).join('');
+              const tableCells = row.map((item) => `<td>${typeof item === 'number' ? (Math.round(item * 100) / 100).toFixed(2) : item}</td>`).join('');
               return `<tr>${tableCells}</tr>`;
             }).join('');
             articleHeadersDiv.innerHTML += `<div class="tile">
@@ -221,6 +221,9 @@
                   </thead>
                   <tbody>
                     ${tableRows}
+                    <tr>
+                      <th>Aggregate polarity score: ${past_article.agg_polarity}</th>  
+                    </tr>
                   </tbody>
                 </table>
               </div>
