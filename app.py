@@ -113,8 +113,10 @@ def get_entry_counts_and_sentiment_sum_by_month(keyword):
             # Handle invalid date strings gracefully
             pass
 
+    import pdb
+    pdb.set_trace()
     # Convert aggregated data to the desired format
-    result_data = [{'month': key, 'count': counts[key], 'total_sentiment_score': sentiment_sums[key]}
+    result_data = [{'month': key, 'count': counts[key], 'total_sentiment_score': sentiment_sums[key]/counts[key]}
                    for key in set(counts.keys()) | set(sentiment_sums.keys())]
     sorted_data = sorted(result_data, key=lambda x: x['month'])
     return sorted_data
